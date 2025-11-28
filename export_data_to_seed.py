@@ -4,6 +4,7 @@ This reads all data from ehr_database.db and generates Python code to recreate i
 """
 
 import json
+import pprint
 from database import get_db_session
 from models import Patient, Provider, Appointment, Medication, Allergy, VitalSign, LabResult
 
@@ -188,19 +189,19 @@ from models import Patient, Provider, Appointment, Medication, Allergy, VitalSig
 
 
 # Production data exported from database
-PROVIDERS_DATA = ''' + json.dumps(data['providers'], indent=4) + '''
+PROVIDERS_DATA = ''' + pprint.pformat(data['providers'], width=120) + '''
 
-PATIENTS_DATA = ''' + json.dumps(data['patients'], indent=4) + '''
+PATIENTS_DATA = ''' + pprint.pformat(data['patients'], width=120) + '''
 
-APPOINTMENTS_DATA = ''' + json.dumps(data['appointments'], indent=4) + '''
+APPOINTMENTS_DATA = ''' + pprint.pformat(data['appointments'], width=120) + '''
 
-MEDICATIONS_DATA = ''' + json.dumps(data['medications'], indent=4) + '''
+MEDICATIONS_DATA = ''' + pprint.pformat(data['medications'], width=120) + '''
 
-ALLERGIES_DATA = ''' + json.dumps(data['allergies'], indent=4) + '''
+ALLERGIES_DATA = ''' + pprint.pformat(data['allergies'], width=120) + '''
 
-VITALS_DATA = ''' + json.dumps(data['vitals'], indent=4) + '''
+VITALS_DATA = ''' + pprint.pformat(data['vitals'], width=120) + '''
 
-LABS_DATA = ''' + json.dumps(data['labs'], indent=4) + '''
+LABS_DATA = ''' + pprint.pformat(data['labs'], width=120) + '''
 
 
 def seed_oauth_clients():
