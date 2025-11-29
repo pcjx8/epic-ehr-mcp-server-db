@@ -33,13 +33,31 @@ app.add_middleware(
 )
 
 
-# Middleware to log all requests
+# Middleware to log all requests and responses
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
+    # Log request
+    logger.info(f"=" * 60)
     logger.info(f"Incoming request: {request.method} {request.url.path}")
+    logger.info(f"Query params: {dict(request.query_params)}")
     logger.info(f"Headers: {dict(request.headers)}")
+    
+    # Try to log request body
+    try:
+        body = await request.body()
+        if body:
+            logger.info(f"Request body: {body.decode('utf-8')[:500]}")
+    except:
+        pass
+    
+    # Process request
     response = await call_next(request)
+    
+    # Log response
     logger.info(f"Response status: {response.status_code}")
+    logger.info(f"Response headers: {dict(response.headers)}")
+    logger.info(f"=" * 60)
+    
     return response
 
 # Store active SSE connections
