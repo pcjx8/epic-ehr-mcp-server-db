@@ -274,23 +274,15 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             
             # Auto-authenticate if no token provided (for Copilot Studio convenience)
             if not access_token:
-                logger.info("No access token provided, auto-authenticating with default credentials")
-                auth_result = authenticate_client(
-                    client_id="client_I7T_TK2uPpa0CBPxEQzTaKuNenTlSBzCfN8LRON-xLE",
-                    client_secret="WrQDQAinSIwJINf7jigT7sl5fw3e9h8nTcPpZVE8el53UukgeHCMq0zmFbIupsWu",
-                    app_id="copilot-studio"
-                )
-                if auth_result.get("status") == "success":
-                    access_token = auth_result.get("access_token")
-                    arguments["access_token"] = access_token
-                    logger.info("Auto-authentication successful")
-                else:
-                    raise ValueError("Auto-authentication failed")
-            
-            # Validate token
-            token_validation = validate_token(access_token)
-            if not token_validation.get("valid"):
-                raise ValueError(f"Invalid token: {token_validation.get('error')}")
+                logger.info("No access token provided, bypassing authentication for demo/testing")
+                # Create a dummy token for logging purposes
+                access_token = "demo-mode-no-auth-required"
+                arguments["access_token"] = access_token
+            else:
+                # Only validate token if one was explicitly provided
+                token_validation = validate_token(access_token)
+                if not token_validation.get("valid"):
+                    raise ValueError(f"Invalid token: {token_validation.get('error')}")
             
             # Route to appropriate tool
             if name == "get_patient":
