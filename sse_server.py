@@ -155,11 +155,20 @@ async def get_tools():
 
 @app.post("/tools")
 async def post_tools(request: Request):
-    """Get list of available tools (REST endpoint) - POST"""
+    """Handle POST to /tools - check if it's JSON-RPC or simple REST"""
     try:
+        data = await request.json()
+        
+        # Check if it's a JSON-RPC request
+        if data.get("jsonrpc") == "2.0":
+            logger.info("Detected JSON-RPC request at /tools, forwarding to MCP handler")
+            # Forward to MCP endpoint handler
+            return await mcp_jsonrpc_endpoint(request)
+        
+        # Otherwise return simple tools list
         return await get_tools_list()
     except Exception as e:
-        logger.error(f"Error listing tools (POST): {e}")
+        logger.error(f"Error in POST /tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -376,8 +385,29 @@ async def mcp_jsonrpc_endpoint(request: Request):
         
         logger.info(f"JSON-RPC request: method={method}, id={request_id}")
         
+        # Handle initialize method (MCP protocol handshake)
+        if method == "initialize":
+            logger.info("Handling MCP initialize request")
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {
+                            "listChanged": False
+                        }
+                    },
+                    "serverInfo": {
+                        "name": "EPIC EHR MCP Server",
+                        "version": "1.0.0"
+                    }
+                }
+            }
+        
         # Handle tools/list method
-        if method == "tools/list":
+        elif method == "tools/list":
             tools = await list_tools()
             tools_list = [
                 {
