@@ -32,6 +32,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Middleware to log all requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    logger.info(f"Headers: {dict(request.headers)}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code}")
+    return response
+
 # Store active SSE connections
 active_connections = {}
 
@@ -58,6 +68,42 @@ async def root():
             for tool in tools
         ]
     }
+
+
+@app.post("/")
+async def root_post(request: Request):
+    """Root endpoint POST - handle JSON-RPC at root"""
+    try:
+        data = await request.json()
+        
+        # Check if it's a JSON-RPC request
+        if data.get("jsonrpc") == "2.0":
+            # Forward to MCP endpoint
+            return await mcp_jsonrpc_endpoint(request)
+        
+        # Otherwise return server info
+        tools = await list_tools()
+        return {
+            "name": "EPIC EHR MCP Server",
+            "version": "1.0.0",
+            "protocol": "mcp",
+            "capabilities": {
+                "tools": True,
+                "resources": False,
+                "prompts": False
+            },
+            "tools": [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "inputSchema": tool.inputSchema
+                }
+                for tool in tools
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error in root POST: {e}")
+        return {"error": str(e)}
 
 
 @app.get("/health")
