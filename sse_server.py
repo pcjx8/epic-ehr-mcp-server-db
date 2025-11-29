@@ -281,6 +281,132 @@ async def authenticate_endpoint(request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/mcp")
+async def mcp_jsonrpc_endpoint(request: Request):
+    """
+    JSON-RPC 2.0 endpoint for MCP protocol
+    This is what Copilot Studio expects!
+    
+    Handles methods:
+    - tools/list: Returns available tools
+    - tools/call: Executes a tool
+    """
+    try:
+        data = await request.json()
+        
+        # Validate JSON-RPC 2.0 format
+        jsonrpc = data.get("jsonrpc")
+        method = data.get("method")
+        params = data.get("params", {})
+        request_id = data.get("id")
+        
+        if jsonrpc != "2.0":
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": -32600,
+                    "message": "Invalid Request: jsonrpc must be '2.0'"
+                }
+            }
+        
+        logger.info(f"JSON-RPC request: method={method}, id={request_id}")
+        
+        # Handle tools/list method
+        if method == "tools/list":
+            tools = await list_tools()
+            tools_list = [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "inputSchema": tool.inputSchema
+                }
+                for tool in tools
+            ]
+            
+            logger.info(f"Returning {len(tools_list)} tools via JSON-RPC")
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "tools": tools_list
+                }
+            }
+        
+        # Handle tools/call method
+        elif method == "tools/call":
+            tool_name = params.get("name")
+            arguments = params.get("arguments", {})
+            
+            if not tool_name:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: missing 'name'"
+                    }
+                }
+            
+            # Validate access token if provided
+            access_token = arguments.get("access_token")
+            if access_token:
+                token_data = validate_token(access_token)
+                if not token_data:
+                    return {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "error": {
+                            "code": -32001,
+                            "message": "Invalid access token"
+                        }
+                    }
+            
+            # Call the tool
+            logger.info(f"Calling tool via JSON-RPC: {tool_name}")
+            result = await call_tool(tool_name, arguments)
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "content": [r.model_dump() for r in result]
+                }
+            }
+        
+        # Method not found
+        else:
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": -32601,
+                    "message": f"Method not found: {method}"
+                }
+            }
+            
+    except json.JSONDecodeError:
+        return {
+            "jsonrpc": "2.0",
+            "id": None,
+            "error": {
+                "code": -32700,
+                "message": "Parse error: Invalid JSON"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in JSON-RPC endpoint: {e}")
+        return {
+            "jsonrpc": "2.0",
+            "id": request_id if 'request_id' in locals() else None,
+            "error": {
+                "code": -32603,
+                "message": f"Internal error: {str(e)}"
+            }
+        }
+
+
 if __name__ == "__main__":
     import uvicorn
     import os
