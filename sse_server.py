@@ -385,9 +385,28 @@ async def mcp_jsonrpc_endpoint(request: Request):
         
         logger.info(f"JSON-RPC request: method={method}, id={request_id}")
         
+        # Handle notifications (no response needed)
+        if method and method.startswith("notifications/"):
+            logger.info(f"Received notification: {method}, no response needed")
+            # For notifications, return empty 200 OK
+            return {"status": "ok"}
+        
         # Handle initialize method (MCP protocol handshake)
         if method == "initialize":
             logger.info("Handling MCP initialize request")
+            
+            # Get tools list to include in initialize response
+            tools = await list_tools()
+            tools_list = [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "inputSchema": tool.inputSchema
+                }
+                for tool in tools
+            ]
+            
+            logger.info(f"Including {len(tools_list)} tools in initialize response")
             
             return {
                 "jsonrpc": "2.0",
@@ -402,7 +421,8 @@ async def mcp_jsonrpc_endpoint(request: Request):
                     "serverInfo": {
                         "name": "EPIC EHR MCP Server",
                         "version": "1.0.0"
-                    }
+                    },
+                    "tools": tools_list
                 }
             }
         
