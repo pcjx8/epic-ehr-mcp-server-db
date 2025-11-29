@@ -38,16 +38,25 @@ active_connections = {}
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint - MCP server info"""
+    tools = await list_tools()
     return {
         "name": "EPIC EHR MCP Server",
         "version": "1.0.0",
-        "transport": "SSE",
-        "endpoints": {
-            "sse": "/sse",
-            "tools": "/tools",
-            "health": "/health"
-        }
+        "protocol": "mcp",
+        "capabilities": {
+            "tools": True,
+            "resources": False,
+            "prompts": False
+        },
+        "tools": [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "inputSchema": tool.inputSchema
+            }
+            for tool in tools
+        ]
     }
 
 
@@ -62,16 +71,18 @@ async def get_tools():
     """Get list of available tools (REST endpoint)"""
     try:
         tools = await list_tools()
-        return {
-            "tools": [
-                {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "inputSchema": tool.inputSchema
-                }
-                for tool in tools
-            ]
-        }
+        tools_list = [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "inputSchema": tool.inputSchema
+            }
+            for tool in tools
+        ]
+        
+        # Return just the array for Copilot Studio
+        return tools_list
+        
     except Exception as e:
         logger.error(f"Error listing tools: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -154,28 +165,21 @@ async def sse_post_endpoint(request: Request):
         # Get tools list
         tools = await list_tools()
         
-        return {
-            "jsonrpc": "2.0",
-            "result": {
-                "tools": [
-                    {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "inputSchema": tool.inputSchema
-                    }
-                    for tool in tools
-                ]
+        tools_list = [
+            {
+                "name": tool.name,
+                "description": tool.description,
+                "inputSchema": tool.inputSchema
             }
-        }
+            for tool in tools
+        ]
+        
+        # Try returning just the array
+        return tools_list
+        
     except Exception as e:
         logger.error(f"Error in POST /sse: {e}")
-        return {
-            "jsonrpc": "2.0",
-            "error": {
-                "code": -32603,
-                "message": str(e)
-            }
-        }
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/call")
