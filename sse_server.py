@@ -89,17 +89,7 @@ async def sse_endpoint(request: Request):
         logger.info(f"New SSE connection: {connection_id}")
         
         try:
-            # Send initial connection message
-            yield {
-                "event": "connected",
-                "data": json.dumps({
-                    "type": "connection",
-                    "status": "connected",
-                    "server": "EPIC EHR MCP Server"
-                })
-            }
-            
-            # Send tools list
+            # Send tools list immediately in MCP format
             tools = await list_tools()
             tools_data = {
                 "jsonrpc": "2.0",
@@ -116,31 +106,76 @@ async def sse_endpoint(request: Request):
                 }
             }
             
-            yield {
-                "event": "tools",
-                "data": json.dumps(tools_data)
-            }
+            # Send as SSE event
+            yield f"data: {json.dumps(tools_data)}\n\n"
             
             logger.info(f"Sent {len(tools)} tools to connection {connection_id}")
             
             # Keep connection alive with heartbeat
             while True:
                 await asyncio.sleep(30)
-                yield {
-                    "event": "ping",
-                    "data": json.dumps({"type": "heartbeat", "timestamp": asyncio.get_event_loop().time()})
+                heartbeat = {
+                    "jsonrpc": "2.0",
+                    "method": "ping"
                 }
+                yield f"data: {json.dumps(heartbeat)}\n\n"
                 
         except asyncio.CancelledError:
             logger.info(f"SSE connection closed: {connection_id}")
         except Exception as e:
             logger.error(f"Error in SSE stream: {e}")
-            yield {
-                "event": "error",
-                "data": json.dumps({"error": str(e)})
+            error_data = {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32603,
+                    "message": str(e)
+                }
             }
+            yield f"data: {json.dumps(error_data)}\n\n"
     
-    return EventSourceResponse(event_generator())
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@app.post("/sse")
+async def sse_post_endpoint(request: Request):
+    """
+    Handle POST requests to SSE endpoint (for MCP protocol)
+    Some clients send POST to discover tools
+    """
+    try:
+        # Get tools list
+        tools = await list_tools()
+        
+        return {
+            "jsonrpc": "2.0",
+            "result": {
+                "tools": [
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "inputSchema": tool.inputSchema
+                    }
+                    for tool in tools
+                ]
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in POST /sse: {e}")
+        return {
+            "jsonrpc": "2.0",
+            "error": {
+                "code": -32603,
+                "message": str(e)
+            }
+        }
 
 
 @app.post("/call")
@@ -233,12 +268,16 @@ async def authenticate_endpoint(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
+    import os
     
-    # Run SSE server on port 8000
-    logger.info("Starting SSE server on http://0.0.0.0:8000")
+    # Get port from environment or use 8000 as default
+    port = int(os.getenv("SSE_PORT", "8000"))
+    
+    # Run SSE server
+    logger.info(f"Starting SSE server on http://0.0.0.0:{port}")
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8000,
+        port=port,
         log_level="info"
     )
