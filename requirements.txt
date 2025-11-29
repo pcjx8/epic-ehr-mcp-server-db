@@ -3,8 +3,14 @@ mcp>=0.9.0
 websockets>=12.0
 pydantic>=2.0.0
 
+# HTTP Server for SSE
+fastapi>=0.104.0
+uvicorn>=0.24.0
+sse-starlette>=1.8.0
+
 # Database
 SQLAlchemy>=2.0.0
+psycopg2-binary>=2.9.9  # PostgreSQL adapter
 
 # Authentication
 PyJWT>=2.8.0
