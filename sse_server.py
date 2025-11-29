@@ -66,25 +66,36 @@ async def health():
     return {"status": "healthy", "transport": "sse"}
 
 
+async def get_tools_list():
+    """Helper function to get tools list"""
+    tools = await list_tools()
+    return [
+        {
+            "name": tool.name,
+            "description": tool.description,
+            "inputSchema": tool.inputSchema
+        }
+        for tool in tools
+    ]
+
+
 @app.get("/tools")
 async def get_tools():
-    """Get list of available tools (REST endpoint)"""
+    """Get list of available tools (REST endpoint) - GET"""
     try:
-        tools = await list_tools()
-        tools_list = [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "inputSchema": tool.inputSchema
-            }
-            for tool in tools
-        ]
-        
-        # Return just the array for Copilot Studio
-        return tools_list
-        
+        return await get_tools_list()
     except Exception as e:
-        logger.error(f"Error listing tools: {e}")
+        logger.error(f"Error listing tools (GET): {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/tools")
+async def post_tools(request: Request):
+    """Get list of available tools (REST endpoint) - POST"""
+    try:
+        return await get_tools_list()
+    except Exception as e:
+        logger.error(f"Error listing tools (POST): {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
