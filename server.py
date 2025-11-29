@@ -93,10 +93,10 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string", "description": "Patient MRN"}
                 },
-                "required": ["access_token", "mrn"]
+                "required": ["mrn"]
             }
         ),
         Tool(
@@ -105,10 +105,10 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "search_term": {"type": "string", "description": "Search term"}
                 },
-                "required": ["access_token", "search_term"]
+                "required": ["search_term"]
             }
         ),
         Tool(
@@ -117,7 +117,7 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "first_name": {"type": "string"},
                     "last_name": {"type": "string"},
                     "dob": {"type": "string", "description": "Date of birth (YYYY-MM-DD)"},
@@ -125,7 +125,7 @@ async def list_tools() -> list[Tool]:
                     "email": {"type": "string"},
                     "phone": {"type": "string"}
                 },
-                "required": ["access_token", "first_name", "last_name", "dob"]
+                "required": ["first_name", "last_name", "dob"]
             }
         ),
         # Appointments
@@ -135,11 +135,11 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"},
                     "status": {"type": "string"}
                 },
-                "required": ["access_token", "mrn"]
+                "required": ["mrn"]
             }
         ),
         Tool(
@@ -148,14 +148,14 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"},
                     "provider_npi": {"type": "string"},
                     "date": {"type": "string"},
                     "time": {"type": "string"},
                     "reason": {"type": "string"}
                 },
-                "required": ["access_token", "mrn", "provider_npi", "date", "time"]
+                "required": ["mrn", "provider_npi", "date", "time"]
             }
         ),
         # Medications
@@ -165,10 +165,10 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"}
                 },
-                "required": ["access_token", "mrn"]
+                "required": ["mrn"]
             }
         ),
         Tool(
@@ -177,14 +177,14 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"},
                     "medication_name": {"type": "string"},
                     "dosage": {"type": "string"},
                     "frequency": {"type": "string"},
                     "refills": {"type": "number"}
                 },
-                "required": ["access_token", "mrn", "medication_name", "dosage", "frequency"]
+                "required": ["mrn", "medication_name", "dosage", "frequency"]
             }
         ),
         # Lab Results
@@ -194,10 +194,10 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"}
                 },
-                "required": ["access_token", "mrn"]
+                "required": ["mrn"]
             }
         ),
         # Vital Signs
@@ -207,10 +207,10 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"}
                 },
-                "required": ["access_token", "mrn"]
+                "required": ["mrn"]
             }
         ),
         Tool(
@@ -219,14 +219,14 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"},
                     "systolic_bp": {"type": "number"},
                     "diastolic_bp": {"type": "number"},
                     "heart_rate": {"type": "number"},
                     "temperature": {"type": "number"}
                 },
-                "required": ["access_token", "mrn"]
+                "required": ["mrn"]
             }
         ),
         # Allergies
@@ -236,10 +236,10 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "access_token": {"type": "string", "description": "OAuth access token"},
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"}
                 },
-                "required": ["access_token", "mrn"]
+                "required": ["mrn"]
             }
         )
     ]
@@ -271,8 +271,21 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         # All other tools require token validation
         else:
             access_token = arguments.get("access_token")
+            
+            # Auto-authenticate if no token provided (for Copilot Studio convenience)
             if not access_token:
-                raise ValueError("Access token required")
+                logger.info("No access token provided, auto-authenticating with default credentials")
+                auth_result = authenticate_client(
+                    client_id="client_I7T_TK2uPpa0CBPxEQzTaKuNenTlSBzCfN8LRON-xLE",
+                    client_secret="WrQDQAinSIwJINf7jigT7sl5fw3e9h8nTcPpZVE8el53UukgeHCMq0zmFbIupsWu",
+                    app_id="copilot-studio"
+                )
+                if auth_result.get("status") == "success":
+                    access_token = auth_result.get("access_token")
+                    arguments["access_token"] = access_token
+                    logger.info("Auto-authentication successful")
+                else:
+                    raise ValueError("Auto-authentication failed")
             
             # Validate token
             token_validation = validate_token(access_token)
