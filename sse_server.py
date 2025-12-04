@@ -38,24 +38,30 @@ app.add_middleware(
 async def log_requests(request: Request, call_next):
     # Log request
     logger.info(f"=" * 60)
-    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    logger.info(f"📥 INCOMING REQUEST")
+    logger.info(f"Method: {request.method}")
+    logger.info(f"Path: {request.url.path}")
     logger.info(f"Query params: {dict(request.query_params)}")
     logger.info(f"Headers: {dict(request.headers)}")
     
     # Try to log request body
+    body_str = None
     try:
         body = await request.body()
         if body:
-            logger.info(f"Request body: {body.decode('utf-8')[:500]}")
-    except:
-        pass
+            body_str = body.decode('utf-8')
+            logger.info(f"📄 Request Body:")
+            logger.info(body_str)
+    except Exception as e:
+        logger.error(f"Error reading request body: {e}")
     
     # Process request
     response = await call_next(request)
     
     # Log response
-    logger.info(f"Response status: {response.status_code}")
-    logger.info(f"Response headers: {dict(response.headers)}")
+    logger.info(f"📤 RESPONSE")
+    logger.info(f"Status: {response.status_code}")
+    logger.info(f"Headers: {dict(response.headers)}")
     logger.info(f"=" * 60)
     
     return response
@@ -279,6 +285,9 @@ async def call_tool_endpoint(request: Request):
         tool_name = data.get("tool")
         arguments = data.get("arguments", {})
         
+        logger.info(f"🔧 TOOL CALL: {tool_name}")
+        logger.info(f"📋 Arguments: {json.dumps(arguments, indent=2)}")
+        
         if not tool_name:
             raise HTTPException(status_code=400, detail="Missing 'tool' parameter")
         
@@ -290,21 +299,24 @@ async def call_tool_endpoint(request: Request):
                 raise HTTPException(status_code=401, detail="Invalid access token")
         
         # Call the tool
-        logger.info(f"Calling tool: {tool_name}")
         result = await call_tool(tool_name, arguments)
         
-        # Return result
-        return {
+        # Log result
+        result_data = {
             "jsonrpc": "2.0",
             "result": {
                 "content": [r.model_dump() for r in result]
             }
         }
+        logger.info(f"✅ TOOL RESULT: {json.dumps(result_data, indent=2)[:1000]}")
+        
+        # Return result
+        return result_data
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error calling tool: {e}")
+        logger.error(f"❌ ERROR calling tool: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -9,7 +9,14 @@ from sqlalchemy.pool import StaticPool
 from models import Base
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///ehr_database.db")
+# Use absolute path for SQLite to avoid working directory issues
+if "DATABASE_URL" in os.environ:
+    DATABASE_URL = os.getenv("DATABASE_URL")
+else:
+    # Get the directory where this file is located
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DB_PATH = os.path.join(BASE_DIR, "ehr_database.db")
+    DATABASE_URL = f"sqlite:///{DB_PATH}"
 
 # Create engine
 # For SQLite, use check_same_thread=False and StaticPool for better concurrency

@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime, date
 from database import get_db_session
 from models import Patient, Provider, Appointment, Medication, Allergy, LabResult, VitalSign
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 
 
 async def get_patient_tool(access_token: str, mrn: str) -> dict:
@@ -49,13 +49,39 @@ async def search_patients_tool(access_token: str, search_term: str) -> dict:
     """Search patients by name"""
     db = get_db_session()
     try:
-        patients = db.query(Patient).filter(
-            or_(
-                Patient.first_name.ilike(f"%{search_term}%"),
-                Patient.last_name.ilike(f"%{search_term}%"),
-                Patient.mrn.ilike(f"%{search_term}%")
-            )
-        ).limit(10).all()
+        # Check if search term contains a space (likely full name)
+        if ' ' in search_term.strip():
+            # Split into first and last name
+            parts = search_term.strip().split(None, 1)  # Split on first space
+            first_part = parts[0]
+            last_part = parts[1] if len(parts) > 1 else ""
+            
+            # Search for both parts in either order
+            patients = db.query(Patient).filter(
+                or_(
+                    # First Last order
+                    and_(
+                        Patient.first_name.ilike(f"%{first_part}%"),
+                        Patient.last_name.ilike(f"%{last_part}%")
+                    ),
+                    # Last First order
+                    and_(
+                        Patient.first_name.ilike(f"%{last_part}%"),
+                        Patient.last_name.ilike(f"%{first_part}%")
+                    ),
+                    # Also search MRN
+                    Patient.mrn.ilike(f"%{search_term}%")
+                )
+            ).limit(10).all()
+        else:
+            # Single word search - search all fields
+            patients = db.query(Patient).filter(
+                or_(
+                    Patient.first_name.ilike(f"%{search_term}%"),
+                    Patient.last_name.ilike(f"%{search_term}%"),
+                    Patient.mrn.ilike(f"%{search_term}%")
+                )
+            ).limit(10).all()
         
         results = [{
             "mrn": p.mrn,
@@ -63,6 +89,18 @@ async def search_patients_tool(access_token: str, search_term: str) -> dict:
             "dob": p.dob.isoformat(),
             "email": p.email
         } for p in patients]
+        
+        # If no results, provide helpful message
+        if len(results) == 0:
+            # Get total patient count for context
+            total_patients = db.query(Patient).count()
+            return {
+                "status": "not_found",
+                "count": 0,
+                "patients": [],
+                "message": f"No patients found matching '{search_term}'. Database contains {total_patients} patients total.",
+                "suggestion": "Try searching with just first or last name, or verify the spelling."
+            }
         
         return {
             "status": "success",
@@ -434,18 +472,20 @@ async def search_providers_tool(access_token: str, search_term: str) -> dict:
         # Search by name or specialty
         providers = db.query(Provider).filter(
             or_(
-                Provider.first_name.ilike(f"%{search_term}%"),
-                Provider.last_name.ilike(f"%{search_term}%"),
-                Provider.specialty.ilike(f"%{search_term}%")
+                Provider.name.ilike(f"%{search_term}%"),
+                Provider.specialty.ilike(f"%{search_term}%"),
+                Provider.department.ilike(f"%{search_term}%")
             )
         ).limit(20).all()
         
         results = [{
             "npi": provider.npi,
-            "name": f"Dr. {provider.first_name} {provider.last_name}",
+            "name": provider.name,
             "specialty": provider.specialty,
+            "department": provider.department,
             "phone": provider.phone,
-            "email": provider.email
+            "email": provider.email,
+            "accepting_new_patients": provider.accepting_new_patients
         } for provider in providers]
         
         return {
@@ -470,14 +510,12 @@ async def get_provider_tool(access_token: str, npi: str) -> dict:
             "status": "success",
             "provider": {
                 "npi": provider.npi,
-                "first_name": provider.first_name,
-                "last_name": provider.last_name,
-                "full_name": f"Dr. {provider.first_name} {provider.last_name}",
+                "name": provider.name,
                 "specialty": provider.specialty,
+                "department": provider.department,
                 "phone": provider.phone,
                 "email": provider.email,
-                "license_number": provider.license_number,
-                "license_state": provider.license_state
+                "accepting_new_patients": provider.accepting_new_patients
             }
         }
     finally:
