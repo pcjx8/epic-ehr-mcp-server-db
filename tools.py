@@ -423,3 +423,62 @@ async def get_allergies_tool(access_token: str, mrn: str) -> dict:
         }
     finally:
         db.close()
+
+
+# Provider Management Tools
+
+async def search_providers_tool(access_token: str, search_term: str) -> dict:
+    """Search providers by name or specialty"""
+    db = get_db_session()
+    try:
+        # Search by name or specialty
+        providers = db.query(Provider).filter(
+            or_(
+                Provider.first_name.ilike(f"%{search_term}%"),
+                Provider.last_name.ilike(f"%{search_term}%"),
+                Provider.specialty.ilike(f"%{search_term}%")
+            )
+        ).limit(20).all()
+        
+        results = [{
+            "npi": provider.npi,
+            "name": f"Dr. {provider.first_name} {provider.last_name}",
+            "specialty": provider.specialty,
+            "phone": provider.phone,
+            "email": provider.email
+        } for provider in providers]
+        
+        return {
+            "status": "success",
+            "count": len(results),
+            "providers": results
+        }
+    finally:
+        db.close()
+
+
+async def get_provider_tool(access_token: str, npi: str) -> dict:
+    """Get provider details by NPI"""
+    db = get_db_session()
+    try:
+        provider = db.query(Provider).filter(Provider.npi == npi).first()
+        
+        if not provider:
+            raise ValueError(f"Provider with NPI {npi} not found")
+        
+        return {
+            "status": "success",
+            "provider": {
+                "npi": provider.npi,
+                "first_name": provider.first_name,
+                "last_name": provider.last_name,
+                "full_name": f"Dr. {provider.first_name} {provider.last_name}",
+                "specialty": provider.specialty,
+                "phone": provider.phone,
+                "email": provider.email,
+                "license_number": provider.license_number,
+                "license_state": provider.license_state
+            }
+        }
+    finally:
+        db.close()

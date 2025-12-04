@@ -144,18 +144,43 @@ async def list_tools() -> list[Tool]:
         ),
         Tool(
             name="schedule_appointment",
-            description="Schedule new appointment",
+            description="Schedule new appointment (use search_providers first to get provider_npi)",
             inputSchema={
                 "type": "object",
                 "properties": {
                     "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
                     "mrn": {"type": "string"},
-                    "provider_npi": {"type": "string"},
+                    "provider_npi": {"type": "string", "description": "Provider NPI number (use search_providers to find)"},
                     "date": {"type": "string"},
                     "time": {"type": "string"},
                     "reason": {"type": "string"}
                 },
                 "required": ["mrn", "provider_npi", "date", "time"]
+            }
+        ),
+        # Provider Management
+        Tool(
+            name="search_providers",
+            description="Search for providers by name or specialty (use this to find provider_npi for scheduling)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
+                    "search_term": {"type": "string", "description": "Provider name or specialty to search for"}
+                },
+                "required": ["search_term"]
+            }
+        ),
+        Tool(
+            name="get_provider",
+            description="Get provider details by NPI number",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "access_token": {"type": "string", "description": "OAuth access token (optional - will auto-authenticate if not provided)"},
+                    "npi": {"type": "string", "description": "Provider NPI number"}
+                },
+                "required": ["npi"]
             }
         ),
         # Medications
@@ -258,7 +283,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             get_appointments_tool, schedule_appointment_tool,
             get_medications_tool, prescribe_medication_tool,
             get_lab_results_tool, get_vital_signs_tool, record_vital_signs_tool,
-            get_allergies_tool
+            get_allergies_tool, search_providers_tool, get_provider_tool
         )
         
         # OAuth Authentication
@@ -307,6 +332,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 result = await record_vital_signs_tool(**arguments)
             elif name == "get_allergies":
                 result = await get_allergies_tool(**arguments)
+            elif name == "search_providers":
+                result = await search_providers_tool(**arguments)
+            elif name == "get_provider":
+                result = await get_provider_tool(**arguments)
             else:
                 raise ValueError(f"Unknown tool: {name}")
         
